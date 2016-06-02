@@ -18,12 +18,11 @@ public class TouchPad{
 
     private OrthographicCamera camera;
     private Touchpad touchpad;
+    private Touchpad touchpadShoot;
 
-    public TouchPad() {
+    public TouchPad(OrthographicCamera camera) {
         //Create camera
-        float aspectRatio = (float) Gdx.graphics.getWidth() / (float) Gdx.graphics.getHeight();
-        camera = new OrthographicCamera();
-        camera.setToOrtho(false, 10f*aspectRatio, 10f);
+        this.camera = camera;
 
         Viewport viewport = new FitViewport(MyGame.V_WIDTH, MyGame.V_HEIGHT, camera);
 
@@ -43,26 +42,37 @@ public class TouchPad{
         touchpadStyle.knob = touchKnob;
         //Create new TouchPad with the created style
         touchpad = new Touchpad(10, touchpadStyle);
+        touchpadShoot = new Touchpad(10, touchpadStyle);
         //setBounds(x,y,width,height)
-        touchpad.setBounds(30, 30, 200, 200);
+        //touchpad.setBounds(camera.position.x, camera.position.y, 200, 200);
 
         //Create a Stage and add TouchPad
         Stage stage = new Stage(viewport, new SpriteBatch());
         stage.addActor(touchpad);
+        stage.addActor(touchpadShoot);
         Gdx.input.setInputProcessor(stage);
 
     }
 
-    public Vector2 getKnobPercent(){
+    public Vector2 getKnobPercentWalk(){
         return new Vector2(touchpad.getKnobPercentX(), touchpad.getKnobPercentY());
     }
 
-    public void render(SpriteBatch batch) {
-        camera.update();
+    public Vector2 getKnobPercentShoot(){
+        return new Vector2(touchpadShoot.getKnobPercentX(), touchpadShoot.getKnobPercentY());
+    }
 
-        //Draw
+    public void render(SpriteBatch batch) {
+
+        touchpad.setPosition(camera.position.x - camera.viewportWidth / 2 + 30,
+                camera.position.y - camera.viewportHeight / 2 + 30);
+
+        touchpadShoot.setPosition(camera.position.x + camera.viewportWidth / 2 - 230,
+                camera.position.y - camera.viewportHeight / 2 + 30);
+
         batch.begin();
         touchpad.draw(batch, 1);
+        touchpadShoot.draw(batch, 1);
         batch.end();
     }
 }

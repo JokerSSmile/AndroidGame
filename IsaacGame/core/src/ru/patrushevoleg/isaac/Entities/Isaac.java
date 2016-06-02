@@ -1,8 +1,10 @@
 package ru.patrushevoleg.isaac.Entities;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.maps.MapObject;
@@ -10,14 +12,16 @@ import com.badlogic.gdx.maps.MapObjects;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.viewport.Viewport;
 
-import ru.patrushevoleg.isaac.MyGame;
+import java.util.Vector;
+
 import ru.patrushevoleg.isaac.Screens.PlayState;
 
 public class Isaac extends Entity{
 
     public static final Vector2 BODY_SIZE = new Vector2(36, 29);
-    private static final int BASIC_VELOCITY = 3;
+    private static final int BASIC_VELOCITY = 5;
     private static final float TIME_BETWEEN_FRAMES = 0.1f;
     private static final float TILEMAP_SCALE = PlayState.TILEMAP_SCALE;
 
@@ -25,9 +29,10 @@ public class Isaac extends Entity{
 
     private float velocityBonus;
     private float stateTime;
-    private Vector2 oldPosition;
+    private float lastHitTime;
+    private float lastShootTime;
 
-    private Rectangle rectangle;
+    private Vector2 oldPosition;
 
     private moveState playerMoveState = moveState.NONE;
 
@@ -45,7 +50,10 @@ public class Isaac extends Entity{
         velocity = new Vector2();
         velocityBonus = 1;
         stateTime = 0;
+        lastHitTime = 0;
         size = BODY_SIZE;
+        damage = 2;
+        health = 5;
 
         rectangle = new Rectangle(position.x, position.y, size.x * 1.75f, size.y * 1.25f);
 
@@ -108,13 +116,34 @@ public class Isaac extends Entity{
         }
     }
 
-    public boolean checkCollision(MapObjects collidable){
+    public void collisionWithDoors(MapObjects doors, OrthographicCamera camera){
+        for (MapObject door : doors) {
+            Rectangle rect = ((RectangleMapObject) door).getRectangle();
+            if (getRectangle().overlaps(new Rectangle(rect.getX() * TILEMAP_SCALE, rect.getY() * TILEMAP_SCALE, rect.getWidth() * TILEMAP_SCALE, rect.getHeight() * TILEMAP_SCALE))){
+                if (door.getName().equals("right")){
+                    position.x += 450;
+                    camera.position.x += camera.viewportWidth + 40;
+                }
+                else if (door.getName().equals("left")){
+                    position.x -= 450;
+                    camera.position.x -= camera.viewportWidth + 40;
+                }
+                else if (door.getName().equals("up")){
+                    position.y += 310;
+                    camera.position.y += camera.viewportHeight - 15;
+                }
+                else if (door.getName().equals("down")){
+                    position.y -= 310;
+                    camera.position.y -= camera.viewportHeight - 15;
+                }
+            }
+        }
+    }
+
+    private boolean isCollides(MapObjects collidable){
         for (MapObject wall : collidable) {
             Rectangle rect = ((RectangleMapObject) wall).getRectangle();
             if (getRectangle().overlaps(new Rectangle(rect.getX() * TILEMAP_SCALE, rect.getY() * TILEMAP_SCALE, rect.getWidth() * TILEMAP_SCALE, rect.getHeight() * TILEMAP_SCALE))){
-                System.out.println("collides");
-                //position = oldPosition;
-                //oldPosition = position;
                 return true;
             }
         }
@@ -142,31 +171,62 @@ public class Isaac extends Entity{
     }
 
     private void setPosition(){
-        position.x += this.velocity.x;
-        position.y += this.velocity.y;
+        System.out.println(velocity.x + "  " + velocity.y);
+        position.x += velocity.x;
+        position.y += velocity.y;
+        rectangle.setPosition(position);
     }
 
-    public void update(float dt, Vector2 velocity, MapObjects collidable){
+    public void setVelocity(Vector2 velocity){
+        this.velocity = velocity;
+    }
+
+    public void update(float dt, MapObjects collidable){
 
         stateTime += dt;
         inputHandler(velocity);
-
-        oldPosition = position;
-        if (!checkCollision(collidable)) {
-            setPosition();
-            //rectangle.setPosition(position.x + 20, position.y + 20);
-            if (checkCollision(collidable)){
-                position = oldPosition;
-                //rectangle.setPosition(position.x + 20, position.y + 20);
+        oldPosition.x = rectangle.getX();
+        oldPosition.y = rectangle.getY();
+        setPosition();
+        rectangle.setPosition(position);
+        if (isCollides(collidable)){
+            rectangle.setPosition(oldPosition);
+            if (position.x != oldPosition.x && position.y != oldPosition.y){
+                rectangle.setPosition(oldPosition.x, position.y);
+                if (isCollides(collidable)){
+                    rectangle.setPosition(position.x, oldPosition.y);
+                    if (isCollides(collidable)){
+                        rectangle.setPosition(oldPosition);
+                    }
+                }
             }
         }
 
+        position.x = rectangle.getX();
+        position.y = rectangle.getY();
         setAnimation();
+
     }
 
-
+    @Override
     public void render(SpriteBatch batch){
-        batch.draw(animation.getKeyFrame(stateTime, true), position.x, position.y, BODY_SIZE.x * 3, BODY_SIZE.y * 3);
+        batch.draw(animation.getKeyFrame(stateTime, true), rectangle.getX() - 20, rectangle.getY() - 20, BODY_SIZE.x * 3, BODY_SIZE.y * 3);
     }
 
+    public void getDamage(int dmg){
+        if (stateTime > lastHitTime + 2 || lastHitTime == 0){
+            health -= dmg;
+            lastHitTime = stateTime;
+        }
+    }
+
+    public void shoot(Vector<Bullet> bullets, Vector2 velocity, Texture bulletTexture){
+        if (velocity.x != 0 && velocity.y != 0) {
+            if (stateTime > lastShootTime + 2 || lastShootTime == 0) {
+                bullets.add(new Bullet(bulletTexture, position, velocity));
+                lastShootTime = stateTime;
+                //System.out.println("SHOOT");
+            }
+        }
+    }
 }

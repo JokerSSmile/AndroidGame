@@ -31,6 +31,9 @@ public class ResourceManager {
     public static final String tearDestroyEnemyTexture = imgPath + "tear_destroy_enemy.png";
     public static final String tearDestroyPlayerTexture = imgPath + "tear_destroy_player.png";
     public static final String loadingTexture = imgPath + "loading.png";
+    public static final String flyTexture = imgPath + "fly.png";
+    public static final String bulletTexture = imgPath + "bullet.png";
+
     public static final String mapLevel1 = levelsPath + "level1.tmx";
 
     public static TiledMap level1;
@@ -59,13 +62,14 @@ public class ResourceManager {
         manager.load(tearDestroyEnemyTexture, Texture.class);
         manager.load(tearDestroyPlayerTexture, Texture.class);
         manager.load(loadingTexture, Texture.class);
+        manager.load(flyTexture, Texture.class);
+        manager.load(bulletTexture, Texture.class);
     }
 
     private void loadMaps(){
         manager.setLoader(TiledMap.class, new TmxMapLoader(new InternalFileHandleResolver()));
         manager.load(mapLevel1, TiledMap.class);
     }
-
 
     public boolean isLoaded(){
         return (manager.getProgress() >= 1);
