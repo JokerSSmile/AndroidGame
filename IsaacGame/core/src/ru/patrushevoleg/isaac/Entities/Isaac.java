@@ -12,29 +12,43 @@ import com.badlogic.gdx.maps.MapObjects;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.viewport.Viewport;
 
 import java.util.Vector;
 
+import ru.patrushevoleg.isaac.ResourcesStorage.ResourceManager;
 import ru.patrushevoleg.isaac.Screens.PlayState;
 
 public class Isaac extends Entity{
+
+    private enum headState{
+        DOWN,
+        DOWN_SHOOT,
+        RIGHT,
+        RIGHT_SHOOT,
+        UP,
+        UP_SHOOT,
+        LEFT,
+        LEFT_SHOOT
+    }
 
     public static final Vector2 BODY_SIZE = new Vector2(36, 29);
     private static final int BASIC_VELOCITY = 5;
     private static final float TIME_BETWEEN_FRAMES = 0.1f;
     private static final float TILEMAP_SCALE = PlayState.TILEMAP_SCALE;
-
-    private Texture headTexture;
+    private static final float TIME_BETWEEN_SHOOTS = 1f;
+    private static final float DAMAGE_TAKE_TIME_PAUSE = 1;
 
     private float velocityBonus;
     private float stateTime;
     private float lastHitTime;
     private float lastShootTime;
 
+
     private Vector2 oldPosition;
 
-    private moveState playerMoveState = moveState.NONE;
+    private ResourceManager manager;
+
+    private moveState playerMoveState;
 
     private Animation animation;
     private Animation walkUpDownAnimation;
@@ -42,24 +56,36 @@ public class Isaac extends Entity{
     private Animation walkLeftAnimation;
     private Animation standAnimation;
 
-    public Isaac (Texture isaacTexture, Vector2 startPosition){
+    private TextureRegion[] headFrames;
+    private headState shootState = headState.DOWN;
 
-        this.texture = isaacTexture;
-        position = startPosition;
+    public Isaac (ResourceManager manager, Vector2 startPosition){
+
+        this.manager = manager;
+        this.texture = manager.getTexture(ResourceManager.isaacTexture);
+        Texture headTexture = manager.getTexture(ResourceManager.isaacHeadTexture);
+        headFrames = ru.patrushevoleg.isaac.ResourcesStorage.Animation.getFramesArray1D(headTexture, 8, 1);
+
+        playerMoveState = moveState.NONE;
+        initPosition(startPosition);
         oldPosition = new Vector2(position);
         velocity = new Vector2();
         velocityBonus = 1;
         stateTime = 0;
         lastHitTime = 0;
         size = BODY_SIZE;
-        damage = 2;
-        health = 5;
+        damage = 20;
+        health = 50;
 
-        rectangle = new Rectangle(position.x, position.y, size.x * 1.75f, size.y * 1.25f);
+        rectangle = new Rectangle(position.x, position.y, size.x * 1.75f, size.y * 3f);
 
         createAnimations();
         animation = standAnimation;
 
+    }
+
+    public void initPosition(Vector2 pos){
+        position = pos;
     }
 
     private void createAnimations(){
@@ -88,6 +114,7 @@ public class Isaac extends Entity{
         standAnimation = new Animation(TIME_BETWEEN_FRAMES, splited[1][0]);
     }
 
+    @Override
     public Rectangle getRectangle(){
         return rectangle;
     }
@@ -114,6 +141,7 @@ public class Isaac extends Entity{
             this.velocity.x = 0;
             this.velocity.y = 0;
         }
+
     }
 
     public void collisionWithDoors(MapObjects doors, OrthographicCamera camera){
@@ -121,19 +149,19 @@ public class Isaac extends Entity{
             Rectangle rect = ((RectangleMapObject) door).getRectangle();
             if (getRectangle().overlaps(new Rectangle(rect.getX() * TILEMAP_SCALE, rect.getY() * TILEMAP_SCALE, rect.getWidth() * TILEMAP_SCALE, rect.getHeight() * TILEMAP_SCALE))){
                 if (door.getName().equals("right")){
-                    position.x += 450;
+                    position.x += 400;
                     camera.position.x += camera.viewportWidth + 40;
                 }
                 else if (door.getName().equals("left")){
-                    position.x -= 450;
+                    position.x -= 400;
                     camera.position.x -= camera.viewportWidth + 40;
                 }
                 else if (door.getName().equals("up")){
-                    position.y += 310;
+                    position.y += 280;
                     camera.position.y += camera.viewportHeight - 15;
                 }
                 else if (door.getName().equals("down")){
-                    position.y -= 310;
+                    position.y -= 280;
                     camera.position.y -= camera.viewportHeight - 15;
                 }
             }
@@ -171,10 +199,9 @@ public class Isaac extends Entity{
     }
 
     private void setPosition(){
-        System.out.println(velocity.x + "  " + velocity.y);
         position.x += velocity.x;
         position.y += velocity.y;
-        rectangle.setPosition(position);
+        rectangle.setPosition(this.position);
     }
 
     public void setVelocity(Vector2 velocity){
@@ -183,50 +210,87 @@ public class Isaac extends Entity{
 
     public void update(float dt, MapObjects collidable){
 
-        stateTime += dt;
-        inputHandler(velocity);
-        oldPosition.x = rectangle.getX();
-        oldPosition.y = rectangle.getY();
-        setPosition();
-        rectangle.setPosition(position);
-        if (isCollides(collidable)){
-            rectangle.setPosition(oldPosition);
-            if (position.x != oldPosition.x && position.y != oldPosition.y){
-                rectangle.setPosition(oldPosition.x, position.y);
-                if (isCollides(collidable)){
-                    rectangle.setPosition(position.x, oldPosition.y);
-                    if (isCollides(collidable)){
-                        rectangle.setPosition(oldPosition);
+        isAlive = health > 0;
+
+        if (isAlive) {
+            stateTime += dt;
+            inputHandler(velocity);
+            oldPosition.x = rectangle.getX();
+            oldPosition.y = rectangle.getY();
+            setPosition();
+            rectangle.setPosition(position);
+            if (isCollides(collidable)) {
+                rectangle.setPosition(oldPosition);
+                if (position.x != oldPosition.x && position.y != oldPosition.y) {
+                    rectangle.setPosition(oldPosition.x, position.y);
+                    if (isCollides(collidable)) {
+                        rectangle.setPosition(position.x, oldPosition.y);
+                        if (isCollides(collidable)) {
+                            rectangle.setPosition(oldPosition);
+                        }
                     }
                 }
             }
+
+            position.x = rectangle.getX();
+            position.y = rectangle.getY();
+            setAnimation();
         }
-
-        position.x = rectangle.getX();
-        position.y = rectangle.getY();
-        setAnimation();
-
     }
 
     @Override
     public void render(SpriteBatch batch){
-        batch.draw(animation.getKeyFrame(stateTime, true), rectangle.getX() - 20, rectangle.getY() - 20, BODY_SIZE.x * 3, BODY_SIZE.y * 3);
+        if (isAlive) {
+            batch.draw(animation.getKeyFrame(stateTime, true), rectangle.getX() - 20, rectangle.getY() - 20, BODY_SIZE.x * 3, BODY_SIZE.y * 3);
+            batch.draw(headFrames[shootState.ordinal()], rectangle.getX() - 15, rectangle.getY() + 5, 32 * 3, 32 * 3);
+        }
+    }
+
+    public int getHealth(){
+        return health;
     }
 
     public void getDamage(int dmg){
-        if (stateTime > lastHitTime + 2 || lastHitTime == 0){
+        if (stateTime > lastHitTime + DAMAGE_TAKE_TIME_PAUSE || lastHitTime == 0){
             health -= dmg;
             lastHitTime = stateTime;
         }
     }
 
-    public void shoot(Vector<Bullet> bullets, Vector2 velocity, Texture bulletTexture){
-        if (velocity.x != 0 && velocity.y != 0) {
-            if (stateTime > lastShootTime + 2 || lastShootTime == 0) {
-                bullets.add(new Bullet(bulletTexture, position, velocity));
+    public int getCurrentDamage(){
+        return damage;
+    }
+
+    public void shoot(Vector<Bullet> bullets, Vector2 bulletVelocity, Texture bulletTexture){
+        if (bulletVelocity.x != 0f && bulletVelocity.y != 0f) {
+            if (stateTime > lastShootTime + TIME_BETWEEN_SHOOTS || lastShootTime == 0) {
+                bullets.add(new Bullet(manager, new Vector2(this.position.x + size.x / 2
+                        , this.position.y + size.y), bulletVelocity));
                 lastShootTime = stateTime;
-                //System.out.println("SHOOT");
             }
         }
+
+        if (bulletVelocity.y > 0.8){
+            shootState = stateTime > lastShootTime + TIME_BETWEEN_SHOOTS / 5 ? headState.UP : headState.UP_SHOOT;
+
+        }
+        else if (bulletVelocity.y < -0.8){
+            shootState = stateTime > lastShootTime + TIME_BETWEEN_SHOOTS / 5 ? headState.DOWN : headState.DOWN_SHOOT;
+        }
+        else if (bulletVelocity.x > 0.5){
+            shootState = stateTime > lastShootTime + TIME_BETWEEN_SHOOTS / 5 ? headState.RIGHT : headState.RIGHT_SHOOT;
+        }
+        else if (bulletVelocity.x < -0.5){
+            shootState = stateTime > lastShootTime + TIME_BETWEEN_SHOOTS / 5 ? headState.LEFT : headState.LEFT_SHOOT;
+        }
+        else {
+            shootState = stateTime > lastShootTime + TIME_BETWEEN_SHOOTS / 5 ? headState.DOWN : headState.DOWN_SHOOT;
+
+        }
+    }
+
+    @Override
+    public void dispose(){
+
     }
 }

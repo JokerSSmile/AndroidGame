@@ -2,9 +2,7 @@ package ru.patrushevoleg.isaac.Screens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.maps.MapLayer;
 import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.MapObjects;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
@@ -12,22 +10,26 @@ import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
+
+import java.util.Iterator;
 import java.util.Vector;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
 import ru.patrushevoleg.isaac.Entities.Bullet;
+import ru.patrushevoleg.isaac.Entities.Enemy;
+import ru.patrushevoleg.isaac.Entities.Entity;
 import ru.patrushevoleg.isaac.Entities.Fly;
 import ru.patrushevoleg.isaac.Entities.Isaac;
+import ru.patrushevoleg.isaac.Entities.Worm;
 import ru.patrushevoleg.isaac.MyGame;
 import ru.patrushevoleg.isaac.ResourcesStorage.ResourceManager;
 import ru.patrushevoleg.isaac.UserInterface.TouchPad;
+import ru.patrushevoleg.isaac.UserInterface.UiHearts;
 
 public class PlayState extends Screen {
 
     public static final float TILEMAP_SCALE = 2.75f;
-    private static final Vector2 SCREEN_CENTER = new Vector2(MyGame.V_WIDTH / 2, MyGame.V_HEIGHT / 2);
-    private Texture background = resources.getTexture(ResourceManager.backgoundTexture);
 
     private TouchPad joystick;
     private OrthogonalTiledMapRenderer renderer;
@@ -43,46 +45,70 @@ public class PlayState extends Screen {
     private boolean isRoomCleared;
 
     private Isaac player;
+    private UiHearts uiHealthBar;
 
-    private Vector<Fly> fly;
+    private Vector<Enemy> enemies;
     private Vector<Bullet> bullets;
 
     public PlayState(GameScreenManager gsm, ResourceManager resources){
         super(gsm, resources);
+
+        onNewLevel();
+
+        player = new Isaac(resources, new Vector2(((RectangleMapObject) playerBox).getRectangle().getX() * TILEMAP_SCALE,
+                ((RectangleMapObject) playerBox).getRectangle().getY() * TILEMAP_SCALE));
+    }
+
+    private void initializeData(){
+
         camera.position.set(MyGame.V_WIDTH, MyGame.V_HEIGHT, 0);
         camera.setToOrtho(false, MyGame.V_WIDTH, MyGame.V_HEIGHT);
         viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         joystick = new TouchPad(camera);
-        fly = new java.util.Vector<Fly>();
         bullets = new java.util.Vector<Bullet>();
-
+        enemies = new java.util.Vector<Enemy>();
         shapeRenderer = new ShapeRenderer();
+        renderer = new OrthogonalTiledMapRenderer(map, TILEMAP_SCALE);
+        doors = map.getLayers().get("doors").getObjects();
+        solidObjects = map.getLayers().get("solid").getObjects();
+        playerBox = map.getLayers().get("player").getObjects().get(0);
+        uiHealthBar = new UiHearts(resources.getTexture(ResourceManager.uiHeartTexture));
 
+        if (level > 1) {
+            player.initPosition(new Vector2(((RectangleMapObject) playerBox).getRectangle().getX() * TILEMAP_SCALE,
+                    ((RectangleMapObject) playerBox).getRectangle().getY() * TILEMAP_SCALE));
+        }
+    }
+
+    private void onNewLevel(){
         switch (level){
             case 1:
                 map = new TmxMapLoader().load("levels/level1.tmx");
                 break;
+            case 2:
+                map = new TmxMapLoader().load("levels/level2.tmx");
+                break;
         }
 
-        renderer = new OrthogonalTiledMapRenderer(map, TILEMAP_SCALE);
-
-        doors = map.getLayers().get("doors").getObjects();
-        solidObjects = map.getLayers().get("solid").getObjects();
-        playerBox = map.getLayers().get("player").getObjects().get(0);
-
-        player = new Isaac(resources.getTexture(ResourceManager.isaacTexture), new Vector2(((RectangleMapObject)playerBox).getRectangle().getX() * TILEMAP_SCALE,
-                ((RectangleMapObject)playerBox).getRectangle().getY() * TILEMAP_SCALE));
-
+        initializeData();
         initializeEnemies();
     }
+
 
     private void initializeEnemies(){
 
         MapObjects flyOnMap;
         flyOnMap =  map.getLayers().get("fly").getObjects();
         for (MapObject f: flyOnMap){
-            fly.add(new Fly(resources.getTexture(ResourceManager.flyTexture), new Vector2(((RectangleMapObject)f).getRectangle().getX() * TILEMAP_SCALE,
+            enemies.add(new Fly(resources, new Vector2(((RectangleMapObject)f).getRectangle().getX() * TILEMAP_SCALE,
                     ((RectangleMapObject)f).getRectangle().getY() * TILEMAP_SCALE)));
+        }
+
+        MapObjects wormsOnMap;
+        wormsOnMap =  map.getLayers().get("worms").getObjects();
+        for (MapObject worm: wormsOnMap){
+            enemies.add(new Worm(resources, new Vector2(((RectangleMapObject)worm).getRectangle().getX() * TILEMAP_SCALE,
+                    ((RectangleMapObject)worm).getRectangle().getY() * TILEMAP_SCALE)));
         }
     }
 
@@ -92,11 +118,20 @@ public class PlayState extends Screen {
     }
 
     private void checkIntersectionsOfEntities(){
-        for (Fly f: fly){
-            if (f.getRectangle().overlaps(player.getRectangle())){
-                player.getDamage(f.damage);
+
+        for (Enemy entity: enemies){
+            if (entity.getRectangle().overlaps(player.getRectangle())){
+                player.getDamage(entity.damage);
+            }
+
+            for (Bullet bullet : bullets){
+                if (entity.getRectangle().overlaps(bullet.getRectangle()) && bullet.liveState == Entity.aliveState.ALIVE){
+                    entity.getDamage(player.getCurrentDamage());
+                    bullet.onDestroy();
+                }
             }
         }
+
     }
 
     @Override
@@ -107,19 +142,31 @@ public class PlayState extends Screen {
         player.update(dt, solidObjects);
         player.collisionWithDoors(doors, camera);
         player.shoot(bullets, joystick.getKnobPercentShoot(), resources.getTexture(ResourceManager.bulletTexture));
+        uiHealthBar.update(dt, player.getHealth());
 
-
-        for (Fly f: fly){
-            f.update(dt, solidObjects);
+        for (Iterator<Enemy> it = enemies.iterator(); it.hasNext();){
+            Enemy entity = it.next();
+            entity.update(dt, solidObjects);
+            if (entity.liveState == Entity.aliveState.DEAD){
+                //entity.dispose();
+                it.remove();
+            }
         }
 
-        for (Bullet bullet: bullets){
+        for (Iterator<Bullet> it = bullets.iterator(); it.hasNext();){
+            Bullet bullet = it.next();
             bullet.update(dt, solidObjects);
+            if (bullet.liveState == Entity.aliveState.DEAD){
+                //bullet.dispose();
+                it.remove();
+            }
         }
 
         checkIntersectionsOfEntities();
 
         isRoomCleared = true;
+
+
     }
 
     public void debugRender(){
@@ -137,8 +184,8 @@ public class PlayState extends Screen {
         Rectangle rectP =  player.getRectangle();
         shapeRenderer.rect(rectP.getX(), rectP.getY(), rectP.getWidth(), rectP.getHeight());
 
-        for (Fly f: fly) {
-            Rectangle rectF =  f.getRectangle();
+        for (Enemy entity : enemies){
+            Rectangle rectF =  entity.getRectangle();
             shapeRenderer.rect(rectF.getX(), rectF.getY(), rectF.getWidth(), rectF.getHeight());
         }
 
@@ -160,6 +207,7 @@ public class PlayState extends Screen {
 
         int[] backgroundLayers = { 0, 1 };
         renderer.render(backgroundLayers);
+
         if (isRoomCleared){
             int[] openedDoorsLayer = { 2 };
             renderer.render(openedDoorsLayer);
@@ -171,12 +219,17 @@ public class PlayState extends Screen {
 
         batch.begin();
         player.render(batch);
-        for (Fly f: fly) {
-            f.render(batch);
+
+        for (Enemy entity : enemies){
+            entity.render(batch);
         }
+
         for (Bullet bullet: bullets) {
             bullet.render(batch);
         }
+
+        uiHealthBar.render(batch, new Vector2(camera.position.x,
+                camera.position.y));
 
         batch.end();
 

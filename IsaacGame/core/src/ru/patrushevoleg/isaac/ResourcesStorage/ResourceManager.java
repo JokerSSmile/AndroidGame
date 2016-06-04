@@ -25,14 +25,16 @@ public class ResourceManager {
     private static final String levelsPath = "levels/";
 
     public static final String isaacTexture = imgPath + "body1.png";
+    public static final String isaacHeadTexture = imgPath + "playerHead.png";
     public static final String backgoundTexture = imgPath + "background.png";
     public static final String menuBackgroundTexture = imgPath + "menu_background.png";
     public static final String uiHeartTexture = imgPath + "ui_hearts.png";
-    public static final String tearDestroyEnemyTexture = imgPath + "tear_destroy_enemy.png";
-    public static final String tearDestroyPlayerTexture = imgPath + "tear_destroy_player.png";
     public static final String loadingTexture = imgPath + "loading.png";
     public static final String flyTexture = imgPath + "fly.png";
     public static final String bulletTexture = imgPath + "bullet.png";
+    public static final String bulletDestroyTexture = imgPath + "tear_destroy.png";
+    public static final String enemyDestroyTexture = imgPath + "enemyDestroyTexture.png";
+    public static final String wormTexture = imgPath + "worm.png";
 
     public static final String mapLevel1 = levelsPath + "level1.tmx";
 
@@ -59,11 +61,13 @@ public class ResourceManager {
         manager.load(backgoundTexture, Texture.class);
         manager.load(menuBackgroundTexture, Texture.class);
         manager.load(uiHeartTexture, Texture.class);
-        manager.load(tearDestroyEnemyTexture, Texture.class);
-        manager.load(tearDestroyPlayerTexture, Texture.class);
         manager.load(loadingTexture, Texture.class);
         manager.load(flyTexture, Texture.class);
         manager.load(bulletTexture, Texture.class);
+        manager.load(bulletDestroyTexture, Texture.class);
+        manager.load(isaacHeadTexture, Texture.class);
+        manager.load(enemyDestroyTexture, Texture.class);
+        manager.load(wormTexture, Texture.class);
     }
 
     private void loadMaps(){
