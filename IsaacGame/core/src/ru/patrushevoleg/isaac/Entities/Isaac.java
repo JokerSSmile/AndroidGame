@@ -144,7 +144,11 @@ public class Isaac extends Entity{
 
     }
 
-    public void collisionWithDoors(MapObjects doors, OrthographicCamera camera){
+    public void collisionWithDoors(MapObjects doors, OrthographicCamera camera, boolean isRoomCleared){
+        if (!isRoomCleared){
+            return;
+        }
+
         for (MapObject door : doors) {
             Rectangle rect = ((RectangleMapObject) door).getRectangle();
             if (getRectangle().overlaps(new Rectangle(rect.getX() * TILEMAP_SCALE, rect.getY() * TILEMAP_SCALE, rect.getWidth() * TILEMAP_SCALE, rect.getHeight() * TILEMAP_SCALE))){

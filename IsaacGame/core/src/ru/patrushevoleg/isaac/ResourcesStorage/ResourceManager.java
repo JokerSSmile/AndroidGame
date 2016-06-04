@@ -35,6 +35,7 @@ public class ResourceManager {
     public static final String bulletDestroyTexture = imgPath + "tear_destroy.png";
     public static final String enemyDestroyTexture = imgPath + "enemyDestroyTexture.png";
     public static final String wormTexture = imgPath + "worm.png";
+    public static final String pauseBtnTexture = imgPath + "pauseBtn1.png";
 
     public static final String mapLevel1 = levelsPath + "level1.tmx";
 
@@ -68,6 +69,7 @@ public class ResourceManager {
         manager.load(isaacHeadTexture, Texture.class);
         manager.load(enemyDestroyTexture, Texture.class);
         manager.load(wormTexture, Texture.class);
+        manager.load(pauseBtnTexture, Texture.class);
     }
 
     private void loadMaps(){

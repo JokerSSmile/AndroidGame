@@ -15,6 +15,7 @@ import java.util.Iterator;
 import java.util.Vector;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Vector3;
 
 import ru.patrushevoleg.isaac.Entities.Bullet;
 import ru.patrushevoleg.isaac.Entities.Enemy;
@@ -22,6 +23,7 @@ import ru.patrushevoleg.isaac.Entities.Entity;
 import ru.patrushevoleg.isaac.Entities.Fly;
 import ru.patrushevoleg.isaac.Entities.Isaac;
 import ru.patrushevoleg.isaac.Entities.Worm;
+import ru.patrushevoleg.isaac.Handlers.ButtonHandler;
 import ru.patrushevoleg.isaac.MyGame;
 import ru.patrushevoleg.isaac.ResourcesStorage.ResourceManager;
 import ru.patrushevoleg.isaac.UserInterface.TouchPad;
@@ -35,17 +37,21 @@ public class PlayState extends Screen {
     private OrthogonalTiledMapRenderer renderer;
     private TiledMap map;
 
+    private MapObjects rooms;
     private MapObjects doors;
     private MapObjects solidObjects;
     private MapObject playerBox;
     private ShapeRenderer shapeRenderer;
 
     private int level = 1;
+    private int room = 1;
+    private Rectangle manholeRect;
 
     private boolean isRoomCleared;
 
     private Isaac player;
     private UiHearts uiHealthBar;
+    private ButtonHandler pauseButton;
 
     private Vector<Enemy> enemies;
     private Vector<Bullet> bullets;
@@ -69,15 +75,27 @@ public class PlayState extends Screen {
         enemies = new java.util.Vector<Enemy>();
         shapeRenderer = new ShapeRenderer();
         renderer = new OrthogonalTiledMapRenderer(map, TILEMAP_SCALE);
+
+        rooms = map.getLayers().get("rooms").getObjects();
         doors = map.getLayers().get("doors").getObjects();
         solidObjects = map.getLayers().get("solid").getObjects();
         playerBox = map.getLayers().get("player").getObjects().get(0);
+        MapObject manhole = map.getLayers().get("manhole").getObjects().get(0);
+
         uiHealthBar = new UiHearts(resources.getTexture(ResourceManager.uiHeartTexture));
+        manholeRect = new Rectangle(((RectangleMapObject) manhole).getRectangle());
+        manholeRect.setPosition(manholeRect.getX() * TILEMAP_SCALE, manholeRect.getY() * TILEMAP_SCALE);
+        manholeRect.setSize(manholeRect.getWidth() * TILEMAP_SCALE, manholeRect.getHeight() * TILEMAP_SCALE);
+
+        pauseButton = new ButtonHandler(resources.getTexture(ResourceManager.pauseBtnTexture),
+                new Vector2(viewport.getScreenWidth() / 2 + 100, viewport.getScreenHeight() / 2 - 30),
+                new Vector2(55, 55));
 
         if (level > 1) {
             player.initPosition(new Vector2(((RectangleMapObject) playerBox).getRectangle().getX() * TILEMAP_SCALE,
                     ((RectangleMapObject) playerBox).getRectangle().getY() * TILEMAP_SCALE));
         }
+
     }
 
     private void onNewLevel(){
@@ -96,25 +114,38 @@ public class PlayState extends Screen {
 
 
     private void initializeEnemies(){
-
         MapObjects flyOnMap;
         flyOnMap =  map.getLayers().get("fly").getObjects();
         for (MapObject f: flyOnMap){
+            int enemyRoom = Integer.decode(f.getProperties().get("room", String.class));
             enemies.add(new Fly(resources, new Vector2(((RectangleMapObject)f).getRectangle().getX() * TILEMAP_SCALE,
-                    ((RectangleMapObject)f).getRectangle().getY() * TILEMAP_SCALE)));
+                ((RectangleMapObject)f).getRectangle().getY() * TILEMAP_SCALE), enemyRoom));
         }
 
         MapObjects wormsOnMap;
         wormsOnMap =  map.getLayers().get("worms").getObjects();
         for (MapObject worm: wormsOnMap){
+            int enemyRoom = Integer.decode(worm.getProperties().get("room", String.class));
             enemies.add(new Worm(resources, new Vector2(((RectangleMapObject)worm).getRectangle().getX() * TILEMAP_SCALE,
-                    ((RectangleMapObject)worm).getRectangle().getY() * TILEMAP_SCALE)));
+                    ((RectangleMapObject)worm).getRectangle().getY() * TILEMAP_SCALE), enemyRoom));
         }
     }
 
     @Override
     public void inputHandler() {
 
+        Vector2 mousePos = new Vector2(Gdx.input.getX(), MyGame.V_HEIGHT - Gdx.input.getY());
+
+        if (pauseButton.getRectangle().contains(mousePos.x, mousePos.y) && Gdx.input.isTouched()){
+            pauseButton.onClick();
+        }
+        else{
+            pauseButton.notTouched();
+        }
+
+        if (pauseButton.isOnRelease()){
+            gsm.push(new PauseState(gsm, resources));
+        }
     }
 
     private void checkIntersectionsOfEntities(){
@@ -132,23 +163,53 @@ public class PlayState extends Screen {
             }
         }
 
+        if (player.getRectangle().overlaps(manholeRect)){
+            level++;
+            onNewLevel();
+        }
+
+    }
+
+    private void calculateRoom(){
+        for (MapObject r : rooms){
+            Rectangle rect = ((RectangleMapObject) r).getRectangle();
+            if (player.getRectangle().overlaps(new Rectangle(rect.getX() * TILEMAP_SCALE,
+                    rect.getY() * TILEMAP_SCALE, rect.getWidth() * TILEMAP_SCALE, rect.getHeight() * TILEMAP_SCALE))){
+                room = Integer.parseInt(r.getName());
+            }
+        }
+    }
+
+    private void checkForCleaningRoom(){
+        boolean isCleared = true;
+        for (Enemy enemy : enemies){
+            if (enemy.room == room){
+                isCleared = false;
+            }
+        }
+
+        isRoomCleared = isCleared;
     }
 
     @Override
     public void update(float dt) {
+
+        inputHandler();
         camera.update();
         renderer.setView(camera);
+        calculateRoom();
+
         player.setVelocity(joystick.getKnobPercentWalk());
         player.update(dt, solidObjects);
-        player.collisionWithDoors(doors, camera);
+        player.collisionWithDoors(doors, camera, isRoomCleared);
         player.shoot(bullets, joystick.getKnobPercentShoot(), resources.getTexture(ResourceManager.bulletTexture));
         uiHealthBar.update(dt, player.getHealth());
+        checkForCleaningRoom();
 
         for (Iterator<Enemy> it = enemies.iterator(); it.hasNext();){
             Enemy entity = it.next();
             entity.update(dt, solidObjects);
             if (entity.liveState == Entity.aliveState.DEAD){
-                //entity.dispose();
                 it.remove();
             }
         }
@@ -157,16 +218,11 @@ public class PlayState extends Screen {
             Bullet bullet = it.next();
             bullet.update(dt, solidObjects);
             if (bullet.liveState == Entity.aliveState.DEAD){
-                //bullet.dispose();
                 it.remove();
             }
         }
 
         checkIntersectionsOfEntities();
-
-        isRoomCleared = true;
-
-
     }
 
     public void debugRender(){
@@ -193,6 +249,9 @@ public class PlayState extends Screen {
             Rectangle rectF =  bullet.getRectangle();
             shapeRenderer.rect(rectF.getX(), rectF.getY(), rectF.getWidth(), rectF.getHeight());
         }
+
+        shapeRenderer.rect(pauseButton.getRectangle().getX(), pauseButton.getRectangle().getY(),
+                pauseButton.getRectangle().getWidth(), pauseButton.getRectangle().getHeight());
 
         shapeRenderer.end();
     }
@@ -231,11 +290,14 @@ public class PlayState extends Screen {
         uiHealthBar.render(batch, new Vector2(camera.position.x,
                 camera.position.y));
 
+        pauseButton.render(batch);
         batch.end();
+        joystick.render(batch);
 
         debugRender();
 
-        joystick.render(batch);
+
+
     }
 
     @Override

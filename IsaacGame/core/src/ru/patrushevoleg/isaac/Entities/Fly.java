@@ -30,7 +30,7 @@ public class Fly extends Enemy {
     private Texture destroyTexture;
 
 
-    public Fly(ResourceManager manager, Vector2 startPosition){
+    public Fly(ResourceManager manager, Vector2 startPosition, int room){
 
         this.position = startPosition;
         this.texture = manager.getTexture(ResourceManager.flyTexture);
@@ -41,6 +41,7 @@ public class Fly extends Enemy {
         size = BODY_SIZE;
         damage = 10;
         health = 10;
+        this.room = room;
 
         rectangle = new Rectangle(position.x, position.y, size.x * 1.75f, size.y * 1.25f);
 

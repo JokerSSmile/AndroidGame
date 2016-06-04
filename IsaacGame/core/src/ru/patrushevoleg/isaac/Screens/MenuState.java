@@ -28,7 +28,7 @@ public class MenuState extends Screen {
 
         if (Gdx.input.isTouched())
         {
-            gsm.push(new PlayState(gsm, resources));
+            gsm.set(new PlayState(gsm, resources));
         }
     }
 

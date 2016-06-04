@@ -9,16 +9,14 @@ import com.badlogic.gdx.math.Vector2;
 import ru.patrushevoleg.isaac.MyGame;
 import ru.patrushevoleg.isaac.ResourcesStorage.ResourceManager;
 
-public class LoadState extends Screen {
+public class PauseState extends Screen{
 
-    private Texture loading;
 
-    public LoadState(GameScreenManager gsm, ResourceManager resources){
+    public PauseState(GameScreenManager gsm, ResourceManager resources){
         super(gsm, resources);
         camera.setToOrtho(false, MyGame.V_WIDTH, MyGame.V_HEIGHT);
         viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        resources.load();
-        loading = resources.getTexture(ResourceManager.loadingTexture);
+
     }
 
     @Override
@@ -29,21 +27,18 @@ public class LoadState extends Screen {
     @Override
     public void update(float dt) {
         camera.update();
-        if (resources.isLoaded()){
-            gsm.set(new MenuState(gsm, resources));
-        }
     }
 
     @Override
     public void render(SpriteBatch batch) {
 
-        Gdx.gl20.glClearColor(1, 1, 0, 1);
+        Gdx.gl20.glClearColor(0.0f, 0.0f, 0.0f, 1f);
         Gdx.gl20.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        batch.draw(loading, 0, 0);
         batch.end();
+
     }
 
     @Override

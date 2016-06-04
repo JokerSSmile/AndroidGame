@@ -7,5 +7,7 @@ import com.badlogic.gdx.math.Rectangle;
 
 public abstract class Enemy extends Entity {
 
+    public int room;
+
     public abstract void getDamage(int dmg);
 }

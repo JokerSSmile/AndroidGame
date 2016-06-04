@@ -1,14 +1,18 @@
 package ru.patrushevoleg.isaac.Entities;
 
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.MapObjects;
+import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
 import java.util.Random;
 
+import ru.patrushevoleg.isaac.MyGame;
 import ru.patrushevoleg.isaac.ResourcesStorage.ResourceManager;
 
 public class Worm extends Enemy{
@@ -18,6 +22,8 @@ public class Worm extends Enemy{
     private static final float TIME_BETWEEN_FRAMES = 0.15f;
     private static final float BASIC_SPEED = 2;
     private static final float ANGRY_SPEED = 5;
+    private static final float TILEMAP_SCALE = 2.75f;
+    private static final float TIME_BETWEEN_FRAMES_DESTROY = 0.02f;
 
     private float stateTime;
     private float lastChangeDirTime;
@@ -33,19 +39,27 @@ public class Worm extends Enemy{
     private Animation attackDown;
     private Animation attackLeft;
     private Animation attackRight;
+    private Animation deathAnimation;
 
     moveState wormMoveState;
 
-    public Worm(ResourceManager manager, Vector2 startPos){
+    public Worm(ResourceManager manager, Vector2 startPos, int room){
         this.position = startPos;
         this.texture = manager.getTexture(ResourceManager.wormTexture);
         stateTime = 0;
         lastChangeDirTime = 0;
         isAngry = false;
+        damage = 20;
+        health = 45;
+        this.room = room;
 
-        rectangle = new Rectangle(position.x, position.y, BODY_SIZE.x, BODY_SIZE.y);
+        rectangle = new Rectangle(position.x, position.y, BODY_SIZE.x * 0.75f, BODY_SIZE.y * 0.75f);
 
         wormMoveState = moveState.values()[(int)(Math.random()*4 + 1)];
+
+        Texture destroyTexture = manager.getTexture(ResourceManager.enemyDestroyTexture);
+        TextureRegion[] deathFrames = ru.patrushevoleg.isaac.ResourcesStorage.Animation.getFramesArray1D(destroyTexture, 3, 4);
+        deathAnimation = new Animation(TIME_BETWEEN_FRAMES_DESTROY, deathFrames);
 
         createAnimations();
         setAnimation();
@@ -89,11 +103,19 @@ public class Worm extends Enemy{
 
     @Override
     public void render(SpriteBatch batch) {
-        batch.draw(animation.getKeyFrame(stateTime, true), position.x, position.y);
+
+        if (liveState == aliveState.ALIVE) {
+            batch.draw(animation.getKeyFrame(stateTime, true), position.x, position.y);
+        }
+        else {
+            batch.draw(animation.getKeyFrame(stateTime, true), position.x - 50, position.y - 10);
+        }
     }
 
     @Override
     public void update(float dt, MapObjects collidable) {
+
+        isAlive = health > 0;
 
         stateTime += dt;
 
@@ -104,23 +126,74 @@ public class Worm extends Enemy{
             setAnimation();
         }
 
-        switch (wormMoveState){
-            case UP:
-                position.y += isAngry ? ANGRY_SPEED : BASIC_SPEED;
-                break;
-            case DOWN:
-                position.y -= isAngry ? ANGRY_SPEED : BASIC_SPEED;
-                break;
-            case RIGHT:
-                position.x += isAngry ? ANGRY_SPEED : BASIC_SPEED;
-                break;
-            case LEFT:
-                position.x -= isAngry ? ANGRY_SPEED : BASIC_SPEED;
-                break;
+        if (liveState == aliveState.ALIVE) {
+            switch (wormMoveState) {
+                case UP:
+                    position.y += isAngry ? ANGRY_SPEED : BASIC_SPEED;
+                    break;
+                case DOWN:
+                    position.y -= isAngry ? ANGRY_SPEED : BASIC_SPEED;
+                    break;
+                case RIGHT:
+                    position.x += isAngry ? ANGRY_SPEED : BASIC_SPEED;
+                    break;
+                case LEFT:
+                    position.x -= isAngry ? ANGRY_SPEED : BASIC_SPEED;
+                    break;
+            }
         }
 
-        rectangle.setPosition(position.x, position.y);
+        if (!isAlive && liveState == aliveState.ALIVE){
+            animation = deathAnimation;
+            liveState = aliveState.DYING;
+            stateTime = 0;
+        }
 
+        if (liveState == aliveState.DYING){
+            if (deathAnimation.isAnimationFinished(stateTime)){
+                liveState = aliveState.DEAD;
+            }
+        }
+
+        rectangle.setPosition(position.x + 10, position.y + 10);
+
+        checkCollision(collidable);
+
+    }
+
+    public void checkCollision(MapObjects collidable){
+        boolean isCollides = false;
+        for (MapObject wall : collidable){
+            if (wall instanceof RectangleMapObject) {
+                Rectangle rect = ((RectangleMapObject) wall).getRectangle();
+                if (rectangle.overlaps(new Rectangle(rect.getX() * TILEMAP_SCALE, rect.getY() * TILEMAP_SCALE,
+                        rect.getWidth() * TILEMAP_SCALE, rect.getHeight() * TILEMAP_SCALE))){
+                    isCollides = true;
+                    break;
+                }
+            }
+        }
+
+        if (isCollides){
+            switch (wormMoveState){
+                case UP:
+                    position.y -= BASIC_SPEED * 2;
+                    break;
+                case DOWN:
+                    position.y += BASIC_SPEED * 2;
+                    break;
+                case RIGHT:
+                    position.x -= BASIC_SPEED * 2;
+                    break;
+                case LEFT:
+                    position.x += BASIC_SPEED * 2;
+                    break;
+            }
+
+            wormMoveState = moveState.values()[(int)(Math.random()*4 + 1)];
+            lastChangeDirTime = stateTime;
+            setAnimation();
+        }
     }
 
     @Override

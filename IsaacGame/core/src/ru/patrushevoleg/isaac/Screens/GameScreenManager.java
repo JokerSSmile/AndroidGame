@@ -21,8 +21,8 @@ public class GameScreenManager {
     }
 
     public void set(Screen state){
-        states.pop();
-        states.push(state);
+        pop();
+        push(state);
     }
 
     public void pause(){
