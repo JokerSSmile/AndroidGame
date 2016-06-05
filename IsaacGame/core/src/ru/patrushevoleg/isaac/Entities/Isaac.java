@@ -1,10 +1,8 @@
 package ru.patrushevoleg.isaac.Entities;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
-import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.maps.MapObject;
@@ -37,12 +35,13 @@ public class Isaac extends Entity{
     private static final float TILEMAP_SCALE = PlayState.TILEMAP_SCALE;
     private static final float TIME_BETWEEN_SHOOTS = 1f;
     private static final float DAMAGE_TAKE_TIME_PAUSE = 1;
+    private static final int MAX_HEALTH = 150;
 
     private float velocityBonus;
     private float stateTime;
     private float lastHitTime;
     private float lastShootTime;
-
+    private float timeBetweenShoots;
 
     private Vector2 oldPosition;
 
@@ -73,6 +72,7 @@ public class Isaac extends Entity{
         velocityBonus = 1;
         stateTime = 0;
         lastHitTime = 0;
+        timeBetweenShoots = TIME_BETWEEN_SHOOTS;
         size = BODY_SIZE;
         damage = 20;
         health = 50;
@@ -267,7 +267,7 @@ public class Isaac extends Entity{
 
     public void shoot(Vector<Bullet> bullets, Vector2 bulletVelocity, Texture bulletTexture){
         if (bulletVelocity.x != 0f && bulletVelocity.y != 0f) {
-            if (stateTime > lastShootTime + TIME_BETWEEN_SHOOTS || lastShootTime == 0) {
+            if (stateTime > lastShootTime + timeBetweenShoots || lastShootTime == 0) {
                 bullets.add(new Bullet(manager, new Vector2(this.position.x + size.x / 2
                         , this.position.y + size.y), bulletVelocity));
                 lastShootTime = stateTime;
@@ -275,22 +275,40 @@ public class Isaac extends Entity{
         }
 
         if (bulletVelocity.y > 0.8){
-            shootState = stateTime > lastShootTime + TIME_BETWEEN_SHOOTS / 5 ? headState.UP : headState.UP_SHOOT;
+            shootState = stateTime > lastShootTime + timeBetweenShoots / 5 ? headState.UP : headState.UP_SHOOT;
 
         }
         else if (bulletVelocity.y < -0.8){
-            shootState = stateTime > lastShootTime + TIME_BETWEEN_SHOOTS / 5 ? headState.DOWN : headState.DOWN_SHOOT;
+            shootState = stateTime > lastShootTime + timeBetweenShoots / 5 ? headState.DOWN : headState.DOWN_SHOOT;
         }
         else if (bulletVelocity.x > 0.5){
-            shootState = stateTime > lastShootTime + TIME_BETWEEN_SHOOTS / 5 ? headState.RIGHT : headState.RIGHT_SHOOT;
+            shootState = stateTime > lastShootTime + timeBetweenShoots / 5 ? headState.RIGHT : headState.RIGHT_SHOOT;
         }
         else if (bulletVelocity.x < -0.5){
-            shootState = stateTime > lastShootTime + TIME_BETWEEN_SHOOTS / 5 ? headState.LEFT : headState.LEFT_SHOOT;
+            shootState = stateTime > lastShootTime + timeBetweenShoots / 5 ? headState.LEFT : headState.LEFT_SHOOT;
         }
         else {
-            shootState = stateTime > lastShootTime + TIME_BETWEEN_SHOOTS / 5 ? headState.DOWN : headState.DOWN_SHOOT;
+            shootState = stateTime > lastShootTime + timeBetweenShoots / 5 ? headState.DOWN : headState.DOWN_SHOOT;
 
         }
+    }
+
+    public void increaseHealth(int upgradeBonus){
+        if (health < MAX_HEALTH) {
+            this.health += upgradeBonus;
+        }
+    }
+
+    public void increaseSpeed(float upgradeBonus){
+        this.velocityBonus += upgradeBonus;
+    }
+
+    public void decreaseTimeBetweenShoots(float upgradeBonus){
+        this.timeBetweenShoots -= upgradeBonus;
+    }
+
+    public void increaseDamage(float upgradeBonus){
+        this.damage += upgradeBonus;
     }
 
     @Override

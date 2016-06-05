@@ -1,5 +1,6 @@
 package ru.patrushevoleg.isaac.Entities;
 
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -30,11 +31,11 @@ public class Fly extends Enemy {
     private Texture destroyTexture;
 
 
-    public Fly(ResourceManager manager, Vector2 startPosition, int room){
+    public Fly(ResourceManager resources, Vector2 startPosition, int room){
 
         this.position = startPosition;
-        this.texture = manager.getTexture(ResourceManager.flyTexture);
-        destroyTexture = manager.getTexture(ResourceManager.enemyDestroyTexture);
+        this.texture = resources.getTexture(ResourceManager.flyTexture);
+        destroyTexture = resources.getTexture(ResourceManager.enemyDestroyTexture);
 
         velocity = new Vector2(SPEED, SPEED);
         stateTime = 0;
@@ -42,6 +43,7 @@ public class Fly extends Enemy {
         damage = 10;
         health = 10;
         this.room = room;
+        deathSound = resources.getSound(ResourceManager.enemyDies);
 
         rectangle = new Rectangle(position.x, position.y, size.x * 1.75f, size.y * 1.25f);
 
@@ -91,6 +93,7 @@ public class Fly extends Enemy {
             animation = deathAnimation;
             liveState = aliveState.DYING;
             stateTime = 0;
+            deathSound.play();
         }
 
 

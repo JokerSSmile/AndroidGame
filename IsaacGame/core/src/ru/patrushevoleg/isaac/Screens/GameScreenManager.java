@@ -13,6 +13,8 @@ public class GameScreenManager {
     }
 
     public void push(Screen state){
+        if (states.size() > 0)
+            states.peek().dispose();
         states.push(state);
     }
 
@@ -34,10 +36,13 @@ public class GameScreenManager {
     }
 
     public void render(SpriteBatch batch){
-        states.peek().render(batch);
+        for (Screen state : states){
+            state.render(batch);
+        }
     }
 
     public void dispose(){
+
         states.clear();
     }
 }

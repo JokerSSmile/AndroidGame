@@ -25,9 +25,12 @@ public class UiHearts {
 
         int shift = 50;
         for (int i = 0; i < healthCount / 10; i++) {
-            batch.draw(texture, cameraPos.x + shift * i - 100, cameraPos.y - MyGame.V_HEIGHT / 2  + 50, 32, 32);
+            batch.draw(texture, cameraPos.x + shift * i - 300, cameraPos.y - MyGame.V_HEIGHT / 2  + 50, 32, 32);
 
         }
     }
 
+    public void dispose(){
+        texture.dispose();
+    }
 }

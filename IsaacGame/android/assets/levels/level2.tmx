@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="left-down" width="50" height="50" tilewidth="32" tileheight="32" nextobjectid="103">
+<map version="1.0" orientation="orthogonal" renderorder="left-down" width="50" height="50" tilewidth="32" tileheight="32" nextobjectid="104">
  <tileset firstgid="1" name="background" tilewidth="32" tileheight="32" tilecount="120">
   <image source="../images/background.png" trans="ff00ff" width="480" height="256"/>
  </tileset>
@@ -101,7 +101,7 @@
   <object id="96" x="1346.17" y="994" width="26.3334" height="11.3333"/>
  </objectgroup>
  <objectgroup name="player">
-  <object id="53" name="player" x="224" y="1440" width="32" height="32"/>
+  <object id="53" name="player" x="128.667" y="1472" width="32" height="32"/>
  </objectgroup>
  <objectgroup name="doors">
   <object id="32" name="down" x="1167.45" y="1041.82" width="58.9091" height="7.09091"/>
@@ -115,18 +115,7 @@
   <object id="59" name="down" x="206" y="1301" width="67.5" height="10"/>
   <object id="61" name="up" x="206" y="1331.5" width="66.5" height="7"/>
  </objectgroup>
- <objectgroup name="fly">
-  <object id="55" x="112.5" y="1396" width="22.5" height="18">
-   <properties>
-    <property name="room" value="1"/>
-   </properties>
-  </object>
-  <object id="56" x="316" y="1407" width="28.5" height="17">
-   <properties>
-    <property name="room" value="1"/>
-   </properties>
-  </object>
- </objectgroup>
+ <objectgroup name="fly"/>
  <objectgroup name="worms">
   <object id="64" x="225" y="1141.67" width="24.3333" height="21.3333">
    <properties>

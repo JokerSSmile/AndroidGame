@@ -1,13 +1,14 @@
 package ru.patrushevoleg.isaac.Screens;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.MapObjects;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
-import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
 
@@ -17,6 +18,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector3;
 
+import ru.patrushevoleg.isaac.Entities.Bonus;
 import ru.patrushevoleg.isaac.Entities.Bullet;
 import ru.patrushevoleg.isaac.Entities.Enemy;
 import ru.patrushevoleg.isaac.Entities.Entity;
@@ -32,10 +34,19 @@ import ru.patrushevoleg.isaac.UserInterface.UiHearts;
 public class PlayState extends Screen {
 
     public static final float TILEMAP_SCALE = 2.75f;
+    public static final Vector2 PAUSE_BTN_POS = new Vector2(-90, -90);
+
+    public static final int INCREASE_HEALTH_BONUS = 10;
+    public static final float INCREASE_SPEED = 0.15f;
+    public static final float INCREASE_TIME_BETWEEN_SHOOTS = 0.05f;
+    public static final int INCREASE_DAMAGE = 5;
 
     private TouchPad joystick;
     private OrthogonalTiledMapRenderer renderer;
     private TiledMap map;
+
+    private Music music;
+    Sound newLvl;
 
     private MapObjects rooms;
     private MapObjects doors;
@@ -55,11 +66,19 @@ public class PlayState extends Screen {
 
     private Vector<Enemy> enemies;
     private Vector<Bullet> bullets;
+    private Vector<Bonus> bonuses;
+
 
     public PlayState(GameScreenManager gsm, ResourceManager resources){
         super(gsm, resources);
 
         onNewLevel();
+        newLvl = resources.getSound(ResourceManager.levelStart);
+        newLvl.play();
+        music = resources.getMusic(ResourceManager.bgMusic);
+        music.setLooping(true);
+        music.setVolume(0.5f);
+        music.play();
 
         player = new Isaac(resources, new Vector2(((RectangleMapObject) playerBox).getRectangle().getX() * TILEMAP_SCALE,
                 ((RectangleMapObject) playerBox).getRectangle().getY() * TILEMAP_SCALE));
@@ -71,10 +90,12 @@ public class PlayState extends Screen {
         camera.setToOrtho(false, MyGame.V_WIDTH, MyGame.V_HEIGHT);
         viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         joystick = new TouchPad(camera);
-        bullets = new java.util.Vector<Bullet>();
-        enemies = new java.util.Vector<Enemy>();
+        bullets = new Vector<Bullet>();
+        enemies = new Vector<Enemy>();
+        bonuses = new Vector<Bonus>();
         shapeRenderer = new ShapeRenderer();
         renderer = new OrthogonalTiledMapRenderer(map, TILEMAP_SCALE);
+        isRoomCleared = false;
 
         rooms = map.getLayers().get("rooms").getObjects();
         doors = map.getLayers().get("doors").getObjects();
@@ -88,7 +109,8 @@ public class PlayState extends Screen {
         manholeRect.setSize(manholeRect.getWidth() * TILEMAP_SCALE, manholeRect.getHeight() * TILEMAP_SCALE);
 
         pauseButton = new ButtonHandler(resources.getTexture(ResourceManager.pauseBtnTexture),
-                new Vector2(viewport.getScreenWidth() / 2 + 100, viewport.getScreenHeight() / 2 - 30),
+                new Vector2(camera.position.x + camera.viewportWidth / 2 + PAUSE_BTN_POS.x,
+                        camera.position.y + camera.viewportHeight / 2 + PAUSE_BTN_POS.y),
                 new Vector2(55, 55));
 
         if (level > 1) {
@@ -96,15 +118,16 @@ public class PlayState extends Screen {
                     ((RectangleMapObject) playerBox).getRectangle().getY() * TILEMAP_SCALE));
         }
 
+
     }
 
     private void onNewLevel(){
         switch (level){
             case 1:
-                map = new TmxMapLoader().load("levels/level1.tmx");
+                map = resources.getLevel(ResourceManager.mapLevel1);
                 break;
             case 2:
-                map = new TmxMapLoader().load("levels/level2.tmx");
+                map = resources.getLevel(ResourceManager.mapLevel2);
                 break;
         }
 
@@ -134,9 +157,10 @@ public class PlayState extends Screen {
     @Override
     public void inputHandler() {
 
-        Vector2 mousePos = new Vector2(Gdx.input.getX(), MyGame.V_HEIGHT - Gdx.input.getY());
+        mousePosition = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
+        camera.unproject(mousePosition);
 
-        if (pauseButton.getRectangle().contains(mousePos.x, mousePos.y) && Gdx.input.isTouched()){
+        if (pauseButton.getRectangle().contains(mousePosition.x, mousePosition.y) && Gdx.input.justTouched()){
             pauseButton.onClick();
         }
         else{
@@ -144,6 +168,7 @@ public class PlayState extends Screen {
         }
 
         if (pauseButton.isOnRelease()){
+            music.stop();
             gsm.push(new PauseState(gsm, resources));
         }
     }
@@ -164,8 +189,36 @@ public class PlayState extends Screen {
         }
 
         if (player.getRectangle().overlaps(manholeRect)){
+
+            newLvl.play();
             level++;
             onNewLevel();
+        }
+
+        for (Bonus bonus : bonuses){
+            if (bonus.getRectangle().overlaps(player.getRectangle()) && !bonus.isTaken){
+                Sound pickUp = resources.getSound(ResourceManager.pickUp);
+                pickUp.play();
+
+                switch (bonus.type){
+                    case HP:
+                        player.increaseHealth(INCREASE_HEALTH_BONUS);
+                        bonus.isTaken = true;
+                        break;
+                    case MOVE_SPEED:
+                        player.increaseSpeed(INCREASE_SPEED);
+                        bonus.isTaken = true;
+                        break;
+                    case ATACK_SPEED:
+                        player.decreaseTimeBetweenShoots(INCREASE_TIME_BETWEEN_SHOOTS);
+                        bonus.isTaken = true;
+                        break;
+                    case DAMAGE:
+                        player.increaseDamage(INCREASE_DAMAGE);
+                        bonus.isTaken = true;
+                        break;
+                }
+            }
         }
 
     }
@@ -191,8 +244,32 @@ public class PlayState extends Screen {
         isRoomCleared = isCleared;
     }
 
+    private void updateBonuses(){
+        if (isRoomCleared){
+            boolean isAlreadyInRoom = false;
+            for (Bonus bonus : bonuses){
+                if (room == bonus.getRoom()){
+                    isAlreadyInRoom = true;
+                }
+            }
+            if (!isAlreadyInRoom && room != 1) {
+                Sound drop = resources.getSound(ResourceManager.bonusDrop);
+                drop.play();
+                bonuses.add(new Bonus(resources, new Vector2(camera.position.x, camera.position.y), room));
+            }
+        }
+    }
+
     @Override
     public void update(float dt) {
+
+        if (!music.isPlaying())
+        {
+            music.play();
+        }
+
+        pauseButton.updatePosition(camera.position.x + camera.viewportWidth / 2 + PAUSE_BTN_POS.x,
+                camera.position.y + camera.viewportHeight / 2 + PAUSE_BTN_POS.y);
 
         inputHandler();
         camera.update();
@@ -223,6 +300,7 @@ public class PlayState extends Screen {
         }
 
         checkIntersectionsOfEntities();
+        updateBonuses();
     }
 
     public void debugRender(){
@@ -250,6 +328,11 @@ public class PlayState extends Screen {
             shapeRenderer.rect(rectF.getX(), rectF.getY(), rectF.getWidth(), rectF.getHeight());
         }
 
+        for (Bonus bonus: bonuses) {
+            Rectangle rectF =  bonus.getRectangle();
+            shapeRenderer.rect(rectF.getX(), rectF.getY(), rectF.getWidth(), rectF.getHeight());
+        }
+
         shapeRenderer.rect(pauseButton.getRectangle().getX(), pauseButton.getRectangle().getY(),
                 pauseButton.getRectangle().getWidth(), pauseButton.getRectangle().getHeight());
 
@@ -258,6 +341,7 @@ public class PlayState extends Screen {
 
     @Override
     public void render(SpriteBatch batch) {
+
 
         Gdx.gl20.glClearColor(0, 0, 0, 1);
         Gdx.gl20.glClear(GL20.GL_COLOR_BUFFER_BIT);
@@ -287,17 +371,20 @@ public class PlayState extends Screen {
             bullet.render(batch);
         }
 
+        for (Bonus bonus: bonuses) {
+            bonus.render(batch);
+        }
+
         uiHealthBar.render(batch, new Vector2(camera.position.x,
                 camera.position.y));
 
         pauseButton.render(batch);
+
+
         batch.end();
         joystick.render(batch);
 
         debugRender();
-
-
-
     }
 
     @Override
@@ -322,7 +409,7 @@ public class PlayState extends Screen {
 
     @Override
     public void resume() {
-        resources.reload();
+
     }
 
     @Override

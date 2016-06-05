@@ -1,5 +1,6 @@
 package ru.patrushevoleg.isaac.Entities;
 
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -26,13 +27,15 @@ public class Bullet extends Entity{
 
     private float stateTime;
 
+    private Sound destroySound;
+
     private Texture destroyTexture;
 
     private Animation animation;
     private Animation flyAnimation;
     private Animation destroyAnimation;
 
-    public Bullet(ResourceManager manager, Vector2 startPos, Vector2 velocity){
+    public Bullet(ResourceManager resources, Vector2 startPos, Vector2 velocity){
 
         this.position = startPos;
 
@@ -41,9 +44,13 @@ public class Bullet extends Entity{
         float angle = (float) (Math.atan2(velocity.y, velocity.x));
         this.velocity = new Vector2(MathUtils.cos(angle) * 2, MathUtils.sin(angle) * 2);
 
-        this.texture = manager.getTexture(ResourceManager.bulletTexture);
-        this.destroyTexture = manager.getTexture(ResourceManager.bulletDestroyTexture);
+        this.texture = resources.getTexture(ResourceManager.bulletTexture);
+        this.destroyTexture = resources.getTexture(ResourceManager.bulletDestroyTexture);
         size = BULLET_SIZE;
+
+        destroySound = resources.getSound(ResourceManager.shootDestroy);
+        Sound shootSound = resources.getSound(ResourceManager.playerShoot);
+        shootSound.play();
 
         rectangle = new Rectangle(position.x + RECTANGLE_SHIFT, position.y + RECTANGLE_SHIFT,
                 size.x * RECTANGLE_SCALE, size.y * RECTANGLE_SCALE);
@@ -79,6 +86,7 @@ public class Bullet extends Entity{
         liveState = aliveState.DYING;
         animation = destroyAnimation;
         stateTime = 0;
+        destroySound.play();
     }
 
     @Override
@@ -106,8 +114,6 @@ public class Bullet extends Entity{
                 liveState = aliveState.DEAD;
             }
         }
-
-
 
     }
 

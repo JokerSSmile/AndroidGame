@@ -16,7 +16,11 @@ public class ButtonHandler {
         isTouched = false;
         this.texture = texture;
         this.position = position;
-        this.rectangle = new Rectangle(position.x * 1.62f, position.y * 1.95f, size.x, size.y);
+        this.rectangle = new Rectangle(position.x, position.y, size.x, size.y);
+    }
+
+    public void updatePosition(float x, float y){
+        rectangle.setPosition(x, y);
     }
 
     public void onClick(){
@@ -36,6 +40,10 @@ public class ButtonHandler {
     }
 
     public void render(SpriteBatch batch){
-        batch.draw(texture, position.x, position.y);
+        batch.draw(texture, rectangle.getX(), rectangle.getY(), rectangle.getWidth(), rectangle.getHeight());
+    }
+
+    public void dispose(){
+        texture.dispose();
     }
 }

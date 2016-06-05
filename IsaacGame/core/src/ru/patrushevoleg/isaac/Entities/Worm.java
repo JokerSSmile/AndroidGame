@@ -1,5 +1,6 @@
 package ru.patrushevoleg.isaac.Entities;
 
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -21,43 +22,36 @@ public class Worm extends Enemy{
     private static final Vector2 BODY_SIZE = new Vector2(64, 64);
     private static final float TIME_BETWEEN_FRAMES = 0.15f;
     private static final float BASIC_SPEED = 2;
-    private static final float ANGRY_SPEED = 5;
     private static final float TILEMAP_SCALE = 2.75f;
     private static final float TIME_BETWEEN_FRAMES_DESTROY = 0.02f;
 
     private float stateTime;
     private float lastChangeDirTime;
 
-    private boolean isAngry;
-
     private Animation animation;
     private Animation walkUp;
     private Animation walkDown;
     private Animation walkLeft;
     private Animation walkRight;
-    private Animation attackUp;
-    private Animation attackDown;
-    private Animation attackLeft;
-    private Animation attackRight;
     private Animation deathAnimation;
 
     moveState wormMoveState;
 
-    public Worm(ResourceManager manager, Vector2 startPos, int room){
+    public Worm(ResourceManager resources, Vector2 startPos, int room){
         this.position = startPos;
-        this.texture = manager.getTexture(ResourceManager.wormTexture);
+        this.texture = resources.getTexture(ResourceManager.wormTexture);
         stateTime = 0;
         lastChangeDirTime = 0;
-        isAngry = false;
         damage = 20;
         health = 45;
         this.room = room;
+        deathSound = resources.getSound(ResourceManager.enemyDies);
 
         rectangle = new Rectangle(position.x, position.y, BODY_SIZE.x * 0.75f, BODY_SIZE.y * 0.75f);
 
         wormMoveState = moveState.values()[(int)(Math.random()*4 + 1)];
 
-        Texture destroyTexture = manager.getTexture(ResourceManager.enemyDestroyTexture);
+        Texture destroyTexture = resources.getTexture(ResourceManager.enemyDestroyTexture);
         TextureRegion[] deathFrames = ru.patrushevoleg.isaac.ResourcesStorage.Animation.getFramesArray1D(destroyTexture, 3, 4);
         deathAnimation = new Animation(TIME_BETWEEN_FRAMES_DESTROY, deathFrames);
 
@@ -72,26 +66,22 @@ public class Worm extends Enemy{
         walkDown = new Animation(TIME_BETWEEN_FRAMES, frames[2][0], frames[2][1], frames[2][2], frames[2][3]);
         walkLeft = new Animation(TIME_BETWEEN_FRAMES, frames[4][0], frames[4][1], frames[4][2], frames[4][3]);
         walkRight = new Animation(TIME_BETWEEN_FRAMES, frames[0][0], frames[0][1], frames[0][2], frames[0][3]);
-        attackUp = new Animation(TIME_BETWEEN_FRAMES, frames[3][3]);
-        attackDown = new Animation(TIME_BETWEEN_FRAMES, frames[3][0]);
-        attackLeft = new Animation(TIME_BETWEEN_FRAMES, frames[3][2]);
-        attackRight = new Animation(TIME_BETWEEN_FRAMES, frames[3][1]);
     }
 
     private void setAnimation(){
 
         switch (wormMoveState){
             case UP:
-                animation = isAngry ? attackUp : walkUp;
+                animation = walkUp;
                 break;
             case DOWN:;
-                animation = isAngry ? attackDown : walkDown;
+                animation = walkDown;
                 break;
             case RIGHT:
-                animation = isAngry ? attackRight : walkRight;
+                animation = walkRight;
                 break;
             case LEFT:
-                animation = isAngry ? attackLeft : walkLeft;
+                animation = walkLeft;
                 break;
         }
     }
@@ -129,16 +119,16 @@ public class Worm extends Enemy{
         if (liveState == aliveState.ALIVE) {
             switch (wormMoveState) {
                 case UP:
-                    position.y += isAngry ? ANGRY_SPEED : BASIC_SPEED;
+                    position.y += BASIC_SPEED;
                     break;
                 case DOWN:
-                    position.y -= isAngry ? ANGRY_SPEED : BASIC_SPEED;
+                    position.y -= BASIC_SPEED;
                     break;
                 case RIGHT:
-                    position.x += isAngry ? ANGRY_SPEED : BASIC_SPEED;
+                    position.x += BASIC_SPEED;
                     break;
                 case LEFT:
-                    position.x -= isAngry ? ANGRY_SPEED : BASIC_SPEED;
+                    position.x -= BASIC_SPEED;
                     break;
             }
         }
@@ -147,6 +137,7 @@ public class Worm extends Enemy{
             animation = deathAnimation;
             liveState = aliveState.DYING;
             stateTime = 0;
+            deathSound.play();
         }
 
         if (liveState == aliveState.DYING){

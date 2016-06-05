@@ -17,8 +17,9 @@ public class LoadState extends Screen {
         super(gsm, resources);
         camera.setToOrtho(false, MyGame.V_WIDTH, MyGame.V_HEIGHT);
         viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        loading = new Texture(Gdx.files.internal("images/loading1.png"));
+
         resources.load();
-        loading = resources.getTexture(ResourceManager.loadingTexture);
     }
 
     @Override
@@ -42,7 +43,8 @@ public class LoadState extends Screen {
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        batch.draw(loading, 0, 0);
+        System.out.println("I AM DRAWING");
+        batch.draw(loading, 0, 0, 500, 200);
         batch.end();
     }
 
@@ -53,7 +55,6 @@ public class LoadState extends Screen {
 
     @Override
     public void render(float delta) {
-
     }
 
     @Override

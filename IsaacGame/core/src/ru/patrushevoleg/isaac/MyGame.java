@@ -58,5 +58,6 @@ public class MyGame extends ApplicationAdapter {
 		super.dispose();
 		gsm.dispose();
 		batch.dispose();
+		resources.dispose();
 	}
 }
