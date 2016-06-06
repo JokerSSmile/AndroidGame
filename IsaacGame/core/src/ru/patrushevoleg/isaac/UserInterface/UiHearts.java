@@ -18,7 +18,6 @@ public class UiHearts {
 
     public void update(float dt, int playerHealth){
         healthCount = playerHealth;
-
     }
 
     public void render(SpriteBatch batch, Vector2 cameraPos){

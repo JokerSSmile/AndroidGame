@@ -6,8 +6,6 @@ import com.badlogic.gdx.maps.MapObjects;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
-import ru.patrushevoleg.isaac.ResourcesStorage.ResourceManager;
-
 public abstract class Entity {
 
     public enum moveState{

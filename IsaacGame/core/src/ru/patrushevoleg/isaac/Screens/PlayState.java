@@ -23,6 +23,7 @@ import ru.patrushevoleg.isaac.Entities.Bullet;
 import ru.patrushevoleg.isaac.Entities.Enemy;
 import ru.patrushevoleg.isaac.Entities.Entity;
 import ru.patrushevoleg.isaac.Entities.Fly;
+import ru.patrushevoleg.isaac.Entities.Follower;
 import ru.patrushevoleg.isaac.Entities.Isaac;
 import ru.patrushevoleg.isaac.Entities.Worm;
 import ru.patrushevoleg.isaac.Handlers.ButtonHandler;
@@ -46,7 +47,7 @@ public class PlayState extends Screen {
     private TiledMap map;
 
     private Music music;
-    Sound newLvl;
+    private Sound newLvl;
 
     private MapObjects rooms;
     private MapObjects doors;
@@ -86,6 +87,10 @@ public class PlayState extends Screen {
 
     private void initializeData(){
 
+        if (level == 3){
+            gsm.push(new EndGameState(gsm, resources, true));
+        }
+
         camera.position.set(MyGame.V_WIDTH, MyGame.V_HEIGHT, 0);
         camera.setToOrtho(false, MyGame.V_WIDTH, MyGame.V_HEIGHT);
         viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -97,16 +102,9 @@ public class PlayState extends Screen {
         renderer = new OrthogonalTiledMapRenderer(map, TILEMAP_SCALE);
         isRoomCleared = false;
 
-        rooms = map.getLayers().get("rooms").getObjects();
-        doors = map.getLayers().get("doors").getObjects();
-        solidObjects = map.getLayers().get("solid").getObjects();
-        playerBox = map.getLayers().get("player").getObjects().get(0);
-        MapObject manhole = map.getLayers().get("manhole").getObjects().get(0);
+        readFromMap();
 
         uiHealthBar = new UiHearts(resources.getTexture(ResourceManager.uiHeartTexture));
-        manholeRect = new Rectangle(((RectangleMapObject) manhole).getRectangle());
-        manholeRect.setPosition(manholeRect.getX() * TILEMAP_SCALE, manholeRect.getY() * TILEMAP_SCALE);
-        manholeRect.setSize(manholeRect.getWidth() * TILEMAP_SCALE, manholeRect.getHeight() * TILEMAP_SCALE);
 
         pauseButton = new ButtonHandler(resources.getTexture(ResourceManager.pauseBtnTexture),
                 new Vector2(camera.position.x + camera.viewportWidth / 2 + PAUSE_BTN_POS.x,
@@ -118,7 +116,17 @@ public class PlayState extends Screen {
                     ((RectangleMapObject) playerBox).getRectangle().getY() * TILEMAP_SCALE));
         }
 
+    }
 
+    private void readFromMap(){
+        rooms = map.getLayers().get("rooms").getObjects();
+        doors = map.getLayers().get("doors").getObjects();
+        solidObjects = map.getLayers().get("solid").getObjects();
+        playerBox = map.getLayers().get("player").getObjects().get(0);
+        MapObject manhole = map.getLayers().get("manhole").getObjects().get(0);
+        manholeRect = new Rectangle(((RectangleMapObject) manhole).getRectangle());
+        manholeRect.setPosition(manholeRect.getX() * TILEMAP_SCALE, manholeRect.getY() * TILEMAP_SCALE);
+        manholeRect.setSize(manholeRect.getWidth() * TILEMAP_SCALE, manholeRect.getHeight() * TILEMAP_SCALE);
     }
 
     private void onNewLevel(){
@@ -151,6 +159,14 @@ public class PlayState extends Screen {
             int enemyRoom = Integer.decode(worm.getProperties().get("room", String.class));
             enemies.add(new Worm(resources, new Vector2(((RectangleMapObject)worm).getRectangle().getX() * TILEMAP_SCALE,
                     ((RectangleMapObject)worm).getRectangle().getY() * TILEMAP_SCALE), enemyRoom));
+        }
+
+        MapObjects followOnMap;
+        followOnMap =  map.getLayers().get("follow").getObjects();
+        for (MapObject follow: followOnMap){
+            int enemyRoom = Integer.decode(follow.getProperties().get("room", String.class));
+            enemies.add(new Follower(resources, new Vector2(((RectangleMapObject)follow).getRectangle().getX() * TILEMAP_SCALE,
+                    ((RectangleMapObject)follow).getRectangle().getY() * TILEMAP_SCALE), enemyRoom));
         }
     }
 
@@ -279,13 +295,20 @@ public class PlayState extends Screen {
         player.setVelocity(joystick.getKnobPercentWalk());
         player.update(dt, solidObjects);
         player.collisionWithDoors(doors, camera, isRoomCleared);
-        player.shoot(bullets, joystick.getKnobPercentShoot(), resources.getTexture(ResourceManager.bulletTexture));
+        player.shoot(bullets, joystick.getKnobPercentShoot());
+        if (!player.isAlive){
+            gsm.push(new EndGameState(gsm, resources, false));
+        }
+
         uiHealthBar.update(dt, player.getHealth());
         checkForCleaningRoom();
 
         for (Iterator<Enemy> it = enemies.iterator(); it.hasNext();){
             Enemy entity = it.next();
-            entity.update(dt, solidObjects);
+            if (entity.room == room) {
+                entity.update(dt, solidObjects);
+                entity.updatePosition(player.position);
+            }
             if (entity.liveState == Entity.aliveState.DEAD){
                 it.remove();
             }
@@ -384,7 +407,7 @@ public class PlayState extends Screen {
         batch.end();
         joystick.render(batch);
 
-        debugRender();
+        //debugRender();
     }
 
     @Override

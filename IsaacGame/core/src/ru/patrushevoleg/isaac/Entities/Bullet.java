@@ -12,8 +12,6 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
-import java.util.Vector;
-
 import ru.patrushevoleg.isaac.ResourcesStorage.ResourceManager;
 import ru.patrushevoleg.isaac.Screens.PlayState;
 

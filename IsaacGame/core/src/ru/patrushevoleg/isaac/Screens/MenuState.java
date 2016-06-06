@@ -84,7 +84,7 @@ public class MenuState extends Screen {
     @Override
     public void render(SpriteBatch batch) {
 
-        Gdx.gl20.glClearColor(1, 1, 0, 1);
+        Gdx.gl20.glClearColor(0, 0, 0, 1);
         Gdx.gl20.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         batch.setProjectionMatrix(camera.combined);

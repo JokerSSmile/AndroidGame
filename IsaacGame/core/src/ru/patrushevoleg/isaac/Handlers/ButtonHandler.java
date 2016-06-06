@@ -9,13 +9,11 @@ public class ButtonHandler {
 
     private boolean isTouched;
     private Texture texture;
-    private Vector2 position;
     private Rectangle rectangle;
 
     public ButtonHandler(Texture texture, Vector2 position, Vector2 size){
         isTouched = false;
         this.texture = texture;
-        this.position = position;
         this.rectangle = new Rectangle(position.x, position.y, size.x, size.y);
     }
 

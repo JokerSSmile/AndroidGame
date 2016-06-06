@@ -1,14 +1,11 @@
 package ru.patrushevoleg.isaac.Entities;
 
-
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.maps.MapObjects;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
-import ru.patrushevoleg.isaac.MyGame;
 import ru.patrushevoleg.isaac.ResourcesStorage.ResourceManager;
 
 public class Bonus extends Entity {

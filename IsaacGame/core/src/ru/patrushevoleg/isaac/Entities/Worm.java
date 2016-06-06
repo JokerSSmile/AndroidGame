@@ -1,6 +1,5 @@
 package ru.patrushevoleg.isaac.Entities;
 
-import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -11,9 +10,6 @@ import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
-import java.util.Random;
-
-import ru.patrushevoleg.isaac.MyGame;
 import ru.patrushevoleg.isaac.ResourcesStorage.ResourceManager;
 
 public class Worm extends Enemy{
@@ -35,7 +31,7 @@ public class Worm extends Enemy{
     private Animation walkRight;
     private Animation deathAnimation;
 
-    moveState wormMoveState;
+    private moveState wormMoveState;
 
     public Worm(ResourceManager resources, Vector2 startPos, int room){
         this.position = startPos;
@@ -51,21 +47,21 @@ public class Worm extends Enemy{
 
         wormMoveState = moveState.values()[(int)(Math.random()*4 + 1)];
 
-        Texture destroyTexture = resources.getTexture(ResourceManager.enemyDestroyTexture);
-        TextureRegion[] deathFrames = ru.patrushevoleg.isaac.ResourcesStorage.Animation.getFramesArray1D(destroyTexture, 3, 4);
-        deathAnimation = new Animation(TIME_BETWEEN_FRAMES_DESTROY, deathFrames);
-
-        createAnimations();
+        createAnimations(resources);
         setAnimation();
     }
 
-    private void createAnimations(){
+    private void createAnimations(ResourceManager resources){
         TextureRegion[][] frames = TextureRegion.split(texture, 64, 64);
 
         walkUp = new Animation(TIME_BETWEEN_FRAMES, frames[1][0], frames[1][1], frames[1][2], frames[1][3]);
         walkDown = new Animation(TIME_BETWEEN_FRAMES, frames[2][0], frames[2][1], frames[2][2], frames[2][3]);
         walkLeft = new Animation(TIME_BETWEEN_FRAMES, frames[4][0], frames[4][1], frames[4][2], frames[4][3]);
         walkRight = new Animation(TIME_BETWEEN_FRAMES, frames[0][0], frames[0][1], frames[0][2], frames[0][3]);
+
+        Texture destroyTexture = resources.getTexture(ResourceManager.enemyDestroyTexture);
+        TextureRegion[] deathFrames = ru.patrushevoleg.isaac.ResourcesStorage.Animation.getFramesArray1D(destroyTexture, 3, 4);
+        deathAnimation = new Animation(TIME_BETWEEN_FRAMES_DESTROY, deathFrames);
     }
 
     private void setAnimation(){
@@ -74,7 +70,7 @@ public class Worm extends Enemy{
             case UP:
                 animation = walkUp;
                 break;
-            case DOWN:;
+            case DOWN:
                 animation = walkDown;
                 break;
             case RIGHT:
@@ -89,6 +85,11 @@ public class Worm extends Enemy{
     @Override
     public void getDamage(int dmg) {
         health -= dmg;
+    }
+
+    @Override
+    public void updatePosition(Vector2 neededPosition) {
+
     }
 
     @Override
@@ -157,7 +158,9 @@ public class Worm extends Enemy{
         for (MapObject wall : collidable){
             if (wall instanceof RectangleMapObject) {
                 Rectangle rect = ((RectangleMapObject) wall).getRectangle();
-                if (rectangle.overlaps(new Rectangle(rect.getX() * TILEMAP_SCALE, rect.getY() * TILEMAP_SCALE,
+                Rectangle wormRect = new Rectangle(rectangle.getX(), rectangle.getY(),
+                        rectangle.getWidth(), rectangle.getHeight() * 2);
+                if (wormRect.overlaps(new Rectangle(rect.getX() * TILEMAP_SCALE, rect.getY() * TILEMAP_SCALE,
                         rect.getWidth() * TILEMAP_SCALE, rect.getHeight() * TILEMAP_SCALE))){
                     isCollides = true;
                     break;

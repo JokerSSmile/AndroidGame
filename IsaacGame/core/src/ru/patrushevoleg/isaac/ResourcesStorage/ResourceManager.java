@@ -11,12 +11,8 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.GlyphLayout;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
-import com.badlogic.gdx.maps.tiled.TideMapLoader;
 import com.badlogic.gdx.maps.tiled.TiledMap;
-import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 
 import ru.patrushevoleg.isaac.Entities.Isaac;
@@ -24,8 +20,6 @@ import ru.patrushevoleg.isaac.Entities.Isaac;
 public class ResourceManager {
 
     private static final int playerBodyFrameWidth = (int)Isaac.BODY_SIZE.x;
-    //private static final int playerBodyFrameHeight = playerBodyFrameWidth;
-
 
     private static final String imgPath = "images/";
     private static final String soundPath = "sounds/";
@@ -45,12 +39,17 @@ public class ResourceManager {
     public static final String enemyDestroyTexture = imgPath + "enemyDestroyTexture.png";
     public static final String wormTexture = imgPath + "worm.png";
     public static final String halfBlackTexture = imgPath + "black.png";
+    public static final String followHead = imgPath + "followHead.png";
 
     public static final String pauseBtnTexture = imgPath + "pauseBtn1.png";
     public static final String resumeButtonTexture = imgPath + "resumeBtn.png";
     public static final String menuButtonTexture = imgPath + "menuBtn.png";
     public static final String playButtonTexture = imgPath + "playBtn.png";
     public static final String exitButtonTexture = imgPath + "exitBtn.png";
+
+    public static final String finalBG = imgPath + "finalBg.png";
+    public static final String goodFinal = imgPath + "finalGood.png";
+    public static final String badFinal = imgPath + "finalBad.png";
 
     public static final String hpBonusTexture = imgPath + "bonuses/hpBonus.png";
     public static final String asBonusTexture = imgPath + "bonuses/asBonus.png";
@@ -66,6 +65,7 @@ public class ResourceManager {
     public static final String bonusDrop = soundPath + "bonusDrop.wav";
     public static final String pickUp = soundPath + "pickUp.wav";
     public static final String levelStart = soundPath + "levelStart.wav";
+    public static final String playerHurts = soundPath + "playerHurts.wav";
 
     public static final String mapLevel1 = levelsPath + "level1.tmx";
     public static final String mapLevel2 = levelsPath + "level2.tmx";
@@ -111,11 +111,16 @@ public class ResourceManager {
         manager.load(menuButtonTexture, Texture.class);
         manager.load(playButtonTexture, Texture.class);
         manager.load(exitButtonTexture, Texture.class);
+        manager.load(followHead, Texture.class);
 
         manager.load(hpBonusTexture, Texture.class);
         manager.load(asBonusTexture, Texture.class);
         manager.load(msBonusTexture, Texture.class);
         manager.load(dmgBonusTexture, Texture.class);
+
+        manager.load(finalBG, Texture.class);
+        manager.load(goodFinal, Texture.class);
+        manager.load(badFinal, Texture.class);
     }
 
     private void loadMaps(){
@@ -149,6 +154,7 @@ public class ResourceManager {
         manager.load(bonusDrop, Sound.class);
         manager.load(pickUp, Sound.class);
         manager.load(levelStart, Sound.class);
+        manager.load(playerHurts, Sound.class);
     }
 
     public BitmapFont getFont(){

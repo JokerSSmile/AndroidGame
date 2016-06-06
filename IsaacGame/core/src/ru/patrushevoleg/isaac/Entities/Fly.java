@@ -1,6 +1,5 @@
 package ru.patrushevoleg.isaac.Entities;
 
-import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -40,7 +39,7 @@ public class Fly extends Enemy {
         velocity = new Vector2(SPEED, SPEED);
         stateTime = 0;
         size = BODY_SIZE;
-        damage = 10;
+        damage = 15;
         health = 10;
         this.room = room;
         deathSound = resources.getSound(ResourceManager.enemyDies);
@@ -118,6 +117,11 @@ public class Fly extends Enemy {
     @Override
     public void getDamage(int dmg){
             health -= dmg;
+    }
+
+    @Override
+    public void updatePosition(Vector2 neededPosition) {
+
     }
 
     @Override

@@ -1,5 +1,6 @@
 package ru.patrushevoleg.isaac.Entities;
 
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
@@ -43,8 +44,6 @@ public class Isaac extends Entity{
     private float lastShootTime;
     private float timeBetweenShoots;
 
-    private Vector2 oldPosition;
-
     private ResourceManager manager;
 
     private moveState playerMoveState;
@@ -58,16 +57,15 @@ public class Isaac extends Entity{
     private TextureRegion[] headFrames;
     private headState shootState = headState.DOWN;
 
-    public Isaac (ResourceManager manager, Vector2 startPosition){
+    public Isaac (ResourceManager resources, Vector2 startPosition){
 
-        this.manager = manager;
+        this.manager = resources;
         this.texture = manager.getTexture(ResourceManager.isaacTexture);
         Texture headTexture = manager.getTexture(ResourceManager.isaacHeadTexture);
         headFrames = ru.patrushevoleg.isaac.ResourcesStorage.Animation.getFramesArray1D(headTexture, 8, 1);
 
         playerMoveState = moveState.NONE;
         initPosition(startPosition);
-        oldPosition = new Vector2(position);
         velocity = new Vector2();
         velocityBonus = 1;
         stateTime = 0;
@@ -219,8 +217,7 @@ public class Isaac extends Entity{
         if (isAlive) {
             stateTime += dt;
             inputHandler(velocity);
-            oldPosition.x = rectangle.getX();
-            oldPosition.y = rectangle.getY();
+            Vector2 oldPosition = new Vector2(rectangle.getX(), rectangle.getY());
             setPosition();
             rectangle.setPosition(position);
             if (isCollides(collidable)) {
@@ -248,6 +245,9 @@ public class Isaac extends Entity{
             batch.draw(animation.getKeyFrame(stateTime, true), rectangle.getX() - 20, rectangle.getY() - 20, BODY_SIZE.x * 3, BODY_SIZE.y * 3);
             batch.draw(headFrames[shootState.ordinal()], rectangle.getX() - 15, rectangle.getY() + 5, 32 * 3, 32 * 3);
         }
+        else{
+            batch.draw(animation.getKeyFrame(stateTime, true), rectangle.getX() - 20, rectangle.getY() - 20, BODY_SIZE.x * 3, BODY_SIZE.y * 3);
+        }
     }
 
     public int getHealth(){
@@ -256,6 +256,8 @@ public class Isaac extends Entity{
 
     public void getDamage(int dmg){
         if (stateTime > lastHitTime + DAMAGE_TAKE_TIME_PAUSE || lastHitTime == 0){
+            Sound hurtSound = manager.getSound(ResourceManager.playerHurts);
+            hurtSound.play();
             health -= dmg;
             lastHitTime = stateTime;
         }
@@ -265,7 +267,7 @@ public class Isaac extends Entity{
         return damage;
     }
 
-    public void shoot(Vector<Bullet> bullets, Vector2 bulletVelocity, Texture bulletTexture){
+    public void shoot(Vector<Bullet> bullets, Vector2 bulletVelocity){
         if (bulletVelocity.x != 0f && bulletVelocity.y != 0f) {
             if (stateTime > lastShootTime + timeBetweenShoots || lastShootTime == 0) {
                 bullets.add(new Bullet(manager, new Vector2(this.position.x + size.x / 2
